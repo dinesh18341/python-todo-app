@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My To-Do List</title>
+<script>
+try { var th = localStorage.getItem("theme"); if (th) document.documentElement.setAttribute("data-theme", th); } catch (e) {}
+</script>
+<style>
+:root {
+    color-scheme: dark;
+    --bg: #0b1220; --card: #111b2e; --card2: #17233a; --line: #25324b;
+    --text: #e5e9f0; --muted: #8b9bb4; --accent: #2563eb; --accent2: #60a5fa;
+    --hover: #1c2b47; --input: #0b1220; --shadow: rgba(0,0,0,.25);
+}
+:root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #eef2f7; --card: #ffffff; --card2: #f1f5f9; --line: #dbe3ee;
+    --text: #0f172a; --muted: #64748b; --accent: #2563eb; --accent2: #2563eb;
+    --hover: #e6edf7; --input: #ffffff; --shadow: rgba(15,23,42,.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Segoe UI", system-ui, Arial, sans-serif; min-height: 100vh; color: var(--text);
+    background: var(--bg); display: flex; justify-content: center; padding: 36px 16px; transition: background .3s, color .3s; }
+.wrap { width: 100%; max-width: 720px; height: fit-content; }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 24px; margin-bottom: 18px;
+    box-shadow: 0 4px 24px var(--shadow); }
+h3 { font-size: 12px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); margin: 22px 0 12px; font-weight: 600; }
+h3.first { margin-top: 0; }
+
+/* header / clock */
+.head { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.greeting { font-size: 13px; color: var(--muted); }
+.fulldate { font-size: 18px; font-weight: 600; margin-top: 4px; }
+.time { font-size: 44px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
+.time small { font-size: 16px; margin-left: 6px; color: var(--accent2); }
+.btns { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.ghost { padding: 8px 14px; font-size: 12px; background: var(--card2); border: 1px solid var(--line); color: var(--muted); }
+.ghost:hover { background: var(--hover); color: var(--text); }
+.week { display: flex; gap: 6px; margin-top: 18px; }
+.day { flex: 1; padding: 8px 0; border-radius: 10px; background: var(--card2); font-size: 11px; color: var(--muted); text-align: center; }
+.day span { display: block; font-size: 16px; font-weight: 600; color: var(--text); margin-top: 2px; }
+.day.today { background: var(--accent); color: #dbeafe; }
+.day.today span { color: #fff; }
+
+/* daily goal */
+.goalbox { display: grid; grid-template-columns: 96px 1fr; gap: 20px; align-items: center; }
+.gring { position: relative; width: 96px; height: 96px; }
+.gring svg { transform: rotate(-90deg); }
+.gring-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.gring-text b { font-size: 22px; }
+.gring-text span { font-size: 10px; color: var(--muted); }
+.goalmsg { font-size: 16px; font-weight: 600; margin-bottom: 10px; }
+.chips { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.chipbox { background: var(--card2); border-radius: 12px; padding: 8px 14px; font-size: 13px; color: var(--muted); }
+.chipbox b { color: var(--text); font-size: 16px; margin-right: 4px; }
+.goalform { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
+.goalform input { width: 70px; padding: 8px 10px; }
+.goalform button { padding: 8px 16px; }
+
+/* dashboard */
+.dash { display: grid; grid-template-columns: 130px 1fr; gap: 22px; align-items: center; }
+.ring { position: relative; width: 130px; height: 130px; }
+.ring svg { transform: rotate(-90deg); }
+.track { stroke: var(--card2); }
+.arc { stroke: var(--accent); }
+.garc { stroke: #10b981; }
+.ring-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.ring-text b { font-size: 28px; }
+.ring-text span { font-size: 11px; color: var(--muted); }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.stat { background: var(--card2); border-radius: 12px; padding: 12px 6px; text-align: center; }
+.stat .num { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.stat.bad .num { color: #ef4444; }
+.stat.warn .num { color: #d97706; }
+.crow { display: grid; grid-template-columns: 110px 1fr 50px; gap: 10px; align-items: center; margin-bottom: 9px; font-size: 13px; }
+.cbar { height: 8px; background: var(--card2); border-radius: 20px; overflow: hidden; }
+.cfill { height: 100%; border-radius: 20px; transition: width .6s; }
+.crow .cnt { text-align: right; color: var(--muted); font-size: 12px; }
+.prios { display: flex; gap: 10px; flex-wrap: wrap; }
+.pp { flex: 1; min-width: 100px; text-align: center; padding: 10px; border-radius: 12px; font-size: 13px; color: var(--muted); background: var(--card2); border-top: 3px solid; }
+.pp b { font-size: 20px; display: block; color: var(--text); }
+.pp.High { border-color: #ef4444; } .pp.Medium { border-color: #f59e0b; } .pp.Low { border-color: #10b981; }
+
+/* work graph */
+.sumrow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+.chart { display: flex; gap: 10px; align-items: flex-end; }
+.col { flex: 1; min-width: 0; text-align: center; }
+.col .val { font-size: 11px; color: var(--muted); height: 16px; white-space: nowrap; }
+.stack { height: 150px; display: flex; flex-direction: column-reverse; gap: 1px; padding: 0 12%; border-bottom: 2px solid var(--line); }
+.seg { width: 100%; min-height: 3px; }
+.stack > .seg:last-child { border-radius: 6px 6px 0 0; }
+.col .lab { font-size: 12px; margin-top: 6px; }
+.col.today .lab { color: var(--accent2); font-weight: 700; }
+.col .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 16px; font-size: 12px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; }
+.legend b { color: var(--text); margin-left: 4px; }
+.hint { font-size: 11px; color: var(--muted); margin-top: 10px; }
+
+/* working banner */
+.now { display: none; align-items: center; gap: 12px; padding: 12px 16px; margin-bottom: 18px; border-radius: 12px;
+    background: var(--card2); border: 1px solid var(--c, #10b981); }
+.now.show { display: flex; }
+.pulse { width: 10px; height: 10px; border-radius: 50%; background: var(--c, #10b981); animation: pulse 1.4s infinite; }
+@keyframes pulse { 0%{box-shadow:0 0 0 0 var(--c, #10b981)} 100%{box-shadow:0 0 0 12px transparent} }
+.now .t { flex: 1; font-size: 14px; color: var(--muted); }
+.now .t b { color: var(--text); }
+.now .c { font-weight: 700; font-variant-numeric: tabular-nums; font-size: 18px; }
+
+/* forms */
+.addform { margin-bottom: 18px; }
+.row { display: flex; gap: 8px; margin-bottom: 8px; align-items: stretch; flex-wrap: wrap; }
+input[type="text"], input[type="number"], input[type="date"], select {
+    padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--input); color: var(--text);
+    font-size: 14px; outline: none; transition: border-color .2s, box-shadow .2s; font-family: inherit; }
+input[type="text"] { flex: 1; min-width: 0; }
+input[type="number"] { width: 80px; }
+select { cursor: pointer; }
+input::placeholder { color: var(--muted); opacity: .7; }
+input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.25); }
+input[type="color"] { width: 46px; border: 1px solid var(--line); border-radius: 10px; background: var(--input); cursor: pointer; padding: 4px; }
+button { padding: 0 24px; border: none; border-radius: 10px; background: var(--accent); color: #fff; font-size: 14px;
+    font-weight: 600; cursor: pointer; transition: background .2s; }
+button:hover { background: #1d4ed8; }
+button.ghost { background: var(--card2); color: var(--muted); }
+button.ghost:hover { background: var(--hover); color: var(--text); }
+
+/* filters */
+.filters { margin-bottom: 18px; }
+.search { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+.search input { flex: 1; }
+.clear { text-decoration: none; font-size: 13px; font-weight: 600; padding: 10px 14px; border-radius: 10px; background: #dc2626; color: #fff; white-space: nowrap; }
+.clear:hover { background: #b91c1c; }
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; align-items: center; }
+.tab { text-decoration: none; color: var(--muted); font-size: 13px; font-weight: 600; padding: 7px 14px; border-radius: 20px;
+    background: var(--card2); border: 1px solid transparent; transition: all .2s; }
+.tab:hover { color: var(--text); border-color: var(--line); }
+.tab.on { background: var(--accent); color: #fff; }
+.chip.on { background: color-mix(in srgb, var(--cc) 25%, transparent); border-color: var(--cc); color: var(--text); }
+.sorter { margin-left: auto; padding: 7px 12px; font-size: 13px; border-radius: 20px; }
+
+/* tasks */
+ul { list-style: none; }
+li { --c: #2563eb; display: flex; align-items: center; gap: 12px; padding: 14px 16px; margin-bottom: 10px; border-radius: 12px;
+    background: var(--card2); border: 1px solid var(--line); border-left: 5px solid var(--c); transition: background .2s; }
+li:hover { background: var(--hover); }
+li.running { box-shadow: 0 0 0 1px var(--c), 0 6px 20px color-mix(in srgb, var(--c) 30%, transparent); }
+li.timeup { animation: shake .5s ease 3; border-color: #ef4444; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+
+.check { width: 26px; height: 26px; flex-shrink: 0; border-radius: 50%; border: 2px solid var(--c); display: flex; align-items: center;
+    justify-content: center; text-decoration: none; color: transparent; font-weight: 700; font-size: 13px; transition: all .2s; }
+.check:hover { background: color-mix(in srgb, var(--c) 35%, transparent); }
+.done .check { background: var(--c); color: #0b1220; }
+
+.info { flex: 1; min-width: 0; }
+.title { font-size: 15px; font-weight: 600; word-break: break-word; }
+.done .title { text-decoration: line-through; opacity: .5; }
+.badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 7px; }
+.badge { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 6px; background: var(--line); color: var(--text); }
+.badge.cat { background: color-mix(in srgb, var(--bc) 18%, transparent); color: var(--bc); }
+.p-High { background: rgba(239,68,68,.18); color: #f87171; }
+.p-Medium { background: rgba(245,158,11,.18); color: #fbbf24; }
+.p-Low { background: rgba(16,185,129,.18); color: #34d399; }
+.due-overdue { background: #dc2626; color: #fff; }
+.due-today { background: rgba(251,191,36,.25); color: #fbbf24; }
+.due-soon { background: rgba(251,191,36,.12); color: #fbbf24; }
+:root[data-theme="light"] .badge.cat { color: color-mix(in srgb, var(--bc) 55%, #000); }
+:root[data-theme="light"] .p-High { color: #b91c1c; }
+:root[data-theme="light"] .p-Medium { color: #b45309; }
+:root[data-theme="light"] .p-Low { color: #047857; }
+:root[data-theme="light"] .due-today, :root[data-theme="light"] .due-soon { color: #92400e; }
+.meta { font-size: 11px; color: var(--muted); margin-top: 7px; }
+.cd { display: none; margin-top: 8px; }
+.cd.show { display: block; }
+.cd-text { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; margin-bottom: 4px; color: var(--muted); }
+.cd-bar { height: 5px; background: var(--line); border-radius: 10px; overflow: hidden; }
+.cd-fill { height: 100%; width: 100%; background: var(--c); border-radius: 10px; transition: width .9s linear; }
+.over .cd-text { color: #ef4444; }
+.over .cd-fill { background: #ef4444; }
+
+.stopwatch { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 72px; text-align: right; color: var(--muted); }
+.running .stopwatch { color: var(--text); }
+.ctrl { text-decoration: none; width: 32px; height: 32px; flex-shrink: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    background: var(--c); color: #0b1220; font-size: 13px; transition: transform .2s; }
+.ctrl:hover { transform: scale(1.12); }
+.running .ctrl { background: var(--text); color: var(--card); }
+.small { text-decoration: none; opacity: .55; font-size: 15px; transition: all .2s; color: var(--text); background: none; border: none; padding: 0; cursor: pointer; }
+.small:hover { opacity: 1; }
+
+.empty { text-align: center; color: var(--muted); padding: 26px 0; }
+.empty span { display: block; font-size: 38px; margin-bottom: 8px; }
+.empty a { color: var(--accent2); }
+
+/* edit pop-up */
+.overlay { position: fixed; inset: 0; background: rgba(2,6,23,.6); display: none; align-items: center; justify-content: center; z-index: 20; padding: 16px; }
+.overlay.show { display: flex; }
+.modal { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 24px; width: 100%; max-width: 460px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+.modal h2 { font-size: 18px; margin-bottom: 16px; }
+.modal .row { margin-bottom: 10px; }
+.modal label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 4px; }
+.modal .field { flex: 1; min-width: 120px; }
+.modal .field input, .modal .field select { width: 100%; }
+.modal .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+.modal .actions button { padding: 11px 22px; }
+
+.toast { position: fixed; top: 20px; left: 50%; transform: translate(-50%, -150px); z-index: 30; padding: 14px 24px; border-radius: 12px;
+    background: #dc2626; color: #fff; font-weight: 600; box-shadow: 0 15px 40px rgba(0,0,0,.5); transition: transform .5s; cursor: pointer; text-align: center; }
+.toast small { display: block; font-weight: 400; font-size: 12px; opacity: .85; margin-top: 3px; }
+.toast.show { transform: translate(-50%, 0); }
+#confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 40; }
+
+@media (max-width: 600px) {
+    .time { font-size: 34px; } li { flex-wrap: wrap; }
+    .dash { grid-template-columns: 1fr; justify-items: center; } .stats { width: 100%; }
+    .goalbox { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+    .chips, .goalform { justify-content: center; }
+    .crow { grid-template-columns: 90px 1fr 44px; }
+    .stack { padding: 0 6%; }
+}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<div class="toast" id="toast" onclick="stopSiren(); this.classList.remove('show')"></div>
+
+<!-- EDIT POP-UP -->
+<div class="overlay" id="overlay" onclick="if (event.target === this) closeEdit()">
+    <form class="modal" id="editForm" method="POST">
+        <h2>✏️ Edit task</h2>
+        <div class="row">
+            <div class="field" style="flex-basis:100%">
+                <label>Title</label>
+                <input type="text" name="title" id="e_title" required autocomplete="off" maxlength="200">
+            </div>
+        </div>
+        <div class="row">
+            <div class="field">
+                <label>Category</label>
+                <select name="category" id="e_category">
+                    {% for name, c in cats.items() %}<option value="{{ name }}">{{ c.icon }} {{ name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label>Priority</label>
+                <select name="priority" id="e_priority">
+                    <option value="High">🔴 High</option>
+                    <option value="Medium">🟠 Medium</option>
+                    <option value="Low">🟢 Low</option>
+                </select>
+            </div>
+        </div>
+        <div class="row">
+            <div class="field">
+                <label>Due date</label>
+                <input type="date" name="due" id="e_due">
+            </div>
+            <div class="field">
+                <label>Countdown (minutes)</label>
+                <input type="number" name="minutes" id="e_minutes" min="0" max="999" placeholder="0">
+            </div>
+            <div class="field" style="flex: 0 0 60px; min-width: 60px;">
+                <label>Colour</label>
+                <input type="color" name="color" id="e_color" style="width:100%; height:44px;">
+            </div>
+        </div>
+        <div class="actions">
+            <button type="button" class="ghost" onclick="closeEdit()">Cancel</button>
+            <button type="submit">Save changes</button>
+        </div>
+    </form>
+</div>
+
+<div class="wrap">
+
+    <!-- HEADER / CLOCK -->
+    <div class="panel">
+        <div class="head">
+            <div>
+                <p class="greeting" id="greeting"></p>
+                <p class="fulldate" id="fulldate"></p>
+                <div class="btns">
+                    <button class="ghost" type="button" onclick="startSiren(3)">🔔 Test siren</button>
+                    <button class="ghost" type="button" id="themeBtn" onclick="toggleTheme()">🌙 Dark</button>
+                    <a class="ghost" href="/logout" style="text-decoration:none; display:inline-block; padding:8px 14px; border-radius:10px;">👤 {{ username }} · Log out</a>
+                </div>
+            </div>
+            <div class="time" id="time">--:--:--</div>
+        </div>
+        <div class="week" id="week"></div>
+    </div>
+
+    <!-- DAILY GOAL + STREAK -->
+    <div class="panel">
+        <h3 class="first">Daily goal</h3>
+        <div class="goalbox">
+            <div class="gring">
+                <svg width="96" height="96" viewBox="0 0 96 96">
+                    <circle class="track" cx="48" cy="48" r="36" fill="none" stroke-width="9"/>
+                    <circle class="{% if goal.reached %}garc{% else %}arc{% endif %}" cx="48" cy="48" r="36" fill="none" stroke-width="9" stroke-linecap="round"
+                            stroke-dasharray="{{ (goal.pct * 226.2)|round(1) }} 226.2"/>
+                </svg>
+                <div class="gring-text"><b>{{ goal.done }}/{{ goal.goal }}</b><span>today</span></div>
+            </div>
+            <div>
+                <p class="goalmsg">
+                    {% if goal.reached %}🎉 Goal reached! Great work today.
+                    {% else %}🎯 {{ goal.goal - goal.done }} more task{{ '' if goal.goal - goal.done == 1 else 's' }} to hit today's goal{% endif %}
+                </p>
+                <div class="chips">
+                    <div class="chipbox"><b>🔥 {{ goal.streak }}</b>day streak</div>
+                    <div class="chipbox"><b>🏆 {{ goal.best }}</b>best streak</div>
+                </div>
+                <form class="goalform" action="/goal" method="POST">
+                    <label for="goalInput">Tasks per day:</label>
+                    <input type="number" id="goalInput" name="goal" min="1" max="50" value="{{ goal.goal }}">
+                    <button type="submit">Set goal</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="panel">
+        <div class="dash">
+            <div class="ring">
+                <svg width="130" height="130" viewBox="0 0 140 140">
+                    <circle class="track" cx="70" cy="70" r="52" fill="none" stroke-width="12"/>
+                    <circle class="arc" cx="70" cy="70" r="52" fill="none" stroke-width="12" stroke-linecap="round"
+                            stroke-dasharray="{{ (stats.pct * 3.267)|round(1) }} 326.7"/>
+                </svg>
+                <div class="ring-text"><b>{{ stats.pct }}%</b><span>{{ stats.done }} of {{ stats.total }} done</span></div>
+            </div>
+            <div class="stats">
+                <div class="stat"><div class="num">{{ stats.pending }}</div><div class="lbl">Pending</div></div>
+                <div class="stat"><div class="num">{{ stats.done }}</div><div class="lbl">Completed</div></div>
+                <div class="stat"><div class="num">{{ stats.done_today }}</div><div class="lbl">Done today</div></div>
+                <div class="stat {% if stats.overdue %}bad{% endif %}"><div class="num">{{ stats.overdue }}</div><div class="lbl">Overdue</div></div>
+                <div class="stat {% if stats.due_today %}warn{% endif %}"><div class="num">{{ stats.due_today }}</div><div class="lbl">Due today</div></div>
+                <div class="stat"><div class="num" id="totalTime">00:00:00</div><div class="lbl">Time tracked</div></div>
+            </div>
+        </div>
+
+        <h3>Progress by category</h3>
+        {% for name, c in cats.items() %}
+        <div class="crow">
+            <span>{{ c.icon }} {{ name }}</span>
+            <div class="cbar"><div class="cfill" style="width: {{ stats.by_cat[name].pct }}%; background: {{ c.color }}"></div></div>
+            <span class="cnt">{{ stats.by_cat[name].done }}/{{ stats.by_cat[name].total }}</span>
+        </div>
+        {% endfor %}
+
+        <h3>Pending by priority</h3>
+        <div class="prios">
+            {% for p in prios %}
+            <div class="pp {{ p }}"><b>{{ stats.by_prio[p] }}</b>{{ p }}</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- WORK GRAPH -->
+    <div class="panel">
+        <h3 class="first">Work graph · last 7 days</h3>
+
+        <div class="sumrow">
+            <div class="stat"><div class="num">{{ chart.week_total }}</div><div class="lbl">This week</div></div>
+            <div class="stat"><div class="num">{{ chart.avg }}</div><div class="lbl">Daily average</div></div>
+            <div class="stat"><div class="num">{{ chart.best }}</div><div class="lbl">Best day</div></div>
+        </div>
+
+        <div class="chart">
+            {% for d in chart.days %}
+            <div class="col {% if d.today %}today{% endif %}" title="{{ d.date }}">
+                <div class="val">{{ d.total_text }}</div>
+                <div class="stack">
+                    {% for s in d.segs %}
+                    <div class="seg" style="height: {{ s.h }}%; background: {{ s.color }}" title="{{ s.cat }}: {{ s.text }}"></div>
+                    {% endfor %}
+                </div>
+                <div class="lab">{{ d.label }}</div>
+                <div class="sub">✓ {{ d.done }}</div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="legend">
+            {% for l in chart.legend %}
+            <span><i style="background: {{ l.color }}"></i>{{ l.icon }} {{ l.name }}<b>{{ l.text }}</b></span>
+            {% endfor %}
+        </div>
+        <p class="hint">Bars show time tracked each day. The ✓ number is tasks completed that day. Time is added to the graph when you pause or finish a timer.</p>
+    </div>
+
+    <!-- TASKS -->
+    <div class="panel">
+
+        <div class="now{% if running %} show{% endif %}" id="now"
+             style="--c: {{ running.color if running else '#10b981' }}"
+             data-elapsed="{{ running.elapsed if running else 0 }}"
+             data-started="{{ running.started if running else '' }}">
+            <div class="pulse"></div>
+            <div class="t">Working on: <b>{{ running.title if running else '' }}</b></div>
+            <div class="c" id="nowTime">00:00:00</div>
+        </div>
+
+        <form class="addform" action="/add" method="POST">
+            <div class="row">
+                <input type="text" name="title" placeholder="Add a new task..." required autofocus autocomplete="off" maxlength="200">
+                <button type="submit" style="padding: 0 24px;">Add task</button>
+            </div>
+            <div class="row">
+                <select name="category" title="Category">
+                    {% for name, c in cats.items() %}<option value="{{ name }}">{{ c.icon }} {{ name }}</option>{% endfor %}
+                </select>
+                <select name="priority" title="Priority">
+                    <option value="High">🔴 High</option>
+                    <option value="Medium" selected>🟠 Medium</option>
+                    <option value="Low">🟢 Low</option>
+                </select>
+                <input type="date" name="due" min="{{ today_iso }}" title="Due date (optional)">
+                <input type="number" name="minutes" min="0" max="999" placeholder="Min" title="Countdown in minutes (optional)">
+                <input type="color" name="color" value="{{ default_color }}" title="Task colour">
+            </div>
+        </form>
+
+        <div class="filters">
+            <form class="search" method="GET" action="/">
+                <input type="hidden" name="status" value="{{ status }}">
+                <input type="hidden" name="cat" value="{{ cat }}">
+                <input type="hidden" name="sort" value="{{ sort }}">
+                <input type="text" name="q" value="{{ q }}" placeholder="🔍 Search tasks and press Enter" autocomplete="off">
+                {% if q %}<a class="clear" href="{{ link(q='') }}">✕ Clear search</a>{% endif %}
+            </form>
+            <div class="tabs">
+                <a class="tab {% if status == 'all' %}on{% endif %}" href="{{ link(status='all') }}">All ({{ stats.total }})</a>
+                <a class="tab {% if status == 'pending' %}on{% endif %}" href="{{ link(status='pending') }}">Pending ({{ stats.pending }})</a>
+                <a class="tab {% if status == 'completed' %}on{% endif %}" href="{{ link(status='completed') }}">Completed ({{ stats.done }})</a>
+                <select class="sorter" onchange="location = this.value" title="Sort">
+                    <option value="{{ link(sort='new') }}" {% if sort == 'new' %}selected{% endif %}>Sort: Added order</option>
+                    <option value="{{ link(sort='priority') }}" {% if sort == 'priority' %}selected{% endif %}>Sort: Priority</option>
+                    <option value="{{ link(sort='due') }}" {% if sort == 'due' %}selected{% endif %}>Sort: Due date</option>
+                </select>
+            </div>
+            <div class="tabs">
+                <a class="tab {% if cat == 'all' %}on{% endif %}" href="{{ link(cat='all') }}">All categories</a>
+                {% for name, c in cats.items() %}
+                <a class="tab chip {% if cat == name %}on{% endif %}" style="--cc: {{ c.color }}" href="{{ link(cat=name) }}">{{ c.icon }} {{ name }}</a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <ul>
+            {% for task in tasks %}
+            <li class="{% if task.done %}done{% endif %}{% if task.started %} running{% endif %}"
+                style="--c: {{ task.color }}"
+                data-id="{{ task.id }}"
+                data-title="{{ task.title }}"
+                data-category="{{ task.category }}"
+                data-priority="{{ task.priority }}"
+                data-due="{{ task.due }}"
+                data-minutes="{{ (task.target // 60) if task.target else '' }}"
+                data-color="{{ task.color }}"
+                data-elapsed="{{ task.elapsed }}"
+                data-started="{{ task.started or '' }}"
+                data-target="{{ task.target }}">
+                <a class="check" href="/complete/{{ task.id }}">✓</a>
+                <div class="info">
+                    <div class="title">{{ task.title }}</div>
+                    <div class="badges">
+                        <span class="badge cat" style="--bc: {{ cats[task.category].color }}">{{ cats[task.category].icon }} {{ task.category }}</span>
+                        <span class="badge p-{{ task.priority }}">{{ task.priority }}</span>
+                        {% if task.due_text %}<span class="badge due-{{ task.due_state }}">📅 {{ task.due_text }}</span>{% endif %}
+                    </div>
+                    <div class="meta">Added {{ task.created }}{% if task.target %} · ⏳ {{ (task.target // 60) }} min goal{% endif %}</div>
+                    <div class="cd{% if task.target %} show{% endif %}">
+                        <div class="cd-text">⏳ --:--</div>
+                        <div class="cd-bar"><div class="cd-fill"></div></div>
+                    </div>
+                </div>
+                <div class="stopwatch">00:00:00</div>
+                {% if not task.done %}
+                <a class="ctrl" href="/timer/{{ task.id }}" title="Start / Pause">{% if task.started %}⏸{% else %}▶{% endif %}</a>
+                {% endif %}
+                <button type="button" class="small" onclick="openEdit(this)" title="Edit task">✏️</button>
+                <a class="small" href="/reset/{{ task.id }}" title="Reset timer">↺</a>
+                <a class="small" href="/delete/{{ task.id }}" title="Delete">🗑️</a>
+            </li>
+            {% else %}
+            <div class="empty">
+                {% if has_tasks %}
+                <span>🔎</span>No tasks match your filters. <a href="/">Clear filters</a>
+                {% else %}
+                <span>🚀</span>Nothing here yet. Add your first task!
+                {% endif %}
+            </div>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<script>
+const serverOffset = {{ now }} - Date.now() / 1000;
+const baseElapsed = {{ total_elapsed }};
+const pad = n => String(n).padStart(2, "0");
+const fmt = s => { s = Math.floor(Math.max(0, s)); return pad(Math.floor(s/3600)) + ":" + pad(Math.floor(s%3600/60)) + ":" + pad(s%60); };
+const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+/* ---------- THEME ---------- */
+function themeLabel() {
+    const light = document.documentElement.getAttribute("data-theme") === "light";
+    document.getElementById("themeBtn").textContent = light ? "☀️ Light" : "🌙 Dark";
+}
+function toggleTheme() {
+    const light = document.documentElement.getAttribute("data-theme") === "light";
+    const next = light ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem("theme", next); } catch (e) {}
+    themeLabel();
+}
+
+/* ---------- EDIT POP-UP ---------- */
+function openEdit(btn) {
+    const li = btn.closest("li");
+    document.getElementById("editForm").action = "/edit/" + li.dataset.id;
+    document.getElementById("e_title").value = li.dataset.title;
+    document.getElementById("e_category").value = li.dataset.category;
+    document.getElementById("e_priority").value = li.dataset.priority;
+    document.getElementById("e_due").value = li.dataset.due;
+    document.getElementById("e_minutes").value = li.dataset.minutes;
+    document.getElementById("e_color").value = li.dataset.color;
+    document.getElementById("overlay").classList.add("show");
+    document.getElementById("e_title").focus();
+}
+function closeEdit() { document.getElementById("overlay").classList.remove("show"); }
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeEdit(); });
+
+/* ---------- CONFETTI ---------- */
+function confetti() {
+    const cv = document.getElementById("confetti"), ctx = cv.getContext("2d");
+    cv.width = innerWidth; cv.height = innerHeight;
+    const colors = ["#60a5fa", "#34d399", "#fbbf24", "#f472b6", "#a78bfa", "#fb923c"];
+    const bits = Array.from({ length: 160 }, () => ({
+        x: innerWidth / 2 + (Math.random() - 0.5) * 200, y: innerHeight * 0.35,
+        vx: (Math.random() - 0.5) * 16, vy: -Math.random() * 14 - 4,
+        w: 6 + Math.random() * 6, h: 4 + Math.random() * 6,
+        r: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4,
+        c: colors[Math.floor(Math.random() * colors.length)]
+    }));
+    const start = performance.now();
+    (function frame(now) {
+        const t = (now - start) / 1000;
+        ctx.clearRect(0, 0, cv.width, cv.height);
+        bits.forEach(b => {
+            b.vy += 0.35; b.x += b.vx; b.y += b.vy; b.r += b.vr; b.vx *= 0.99;
+            ctx.save(); ctx.globalAlpha = Math.max(0, 1 - t / 3.2);
+            ctx.translate(b.x, b.y); ctx.rotate(b.r);
+            ctx.fillStyle = b.c; ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h); ctx.restore();
+        });
+        if (t < 3.2) requestAnimationFrame(frame); else ctx.clearRect(0, 0, cv.width, cv.height);
+    })(start);
+}
+document.querySelectorAll(".check").forEach(a => a.addEventListener("click", () => {
+    if (!a.closest("li").classList.contains("done")) {
+        try { sessionStorage.setItem("confetti", "1"); } catch (e) {}
+    }
+}));
+
+/* ---------- SIREN ---------- */
+let audioCtx = null, sirenOsc = null;
+function getCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    return audioCtx;
+}
+["click", "keydown", "touchstart"].forEach(ev =>
+    document.addEventListener(ev, () => { try { getCtx(); } catch (e) {} })
+);
+function stopSiren() {
+    if (sirenOsc) { try { sirenOsc.stop(); } catch (e) {} sirenOsc = null; }
+}
+function startSiren(seconds) {
+    try {
+        stopSiren();
+        const ctx = getCtx();
+        const osc = ctx.createOscillator(), gain = ctx.createGain();
+        osc.type = "sawtooth";
+        osc.connect(gain); gain.connect(ctx.destination);
+        const t0 = ctx.currentTime;
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.linearRampToValueAtTime(0.25, t0 + 0.1);
+        gain.gain.setValueAtTime(0.25, t0 + seconds - 0.3);
+        gain.gain.linearRampToValueAtTime(0.0001, t0 + seconds);
+        osc.frequency.setValueAtTime(700, t0);
+        for (let t = 0; t < seconds; t += 1.2) {
+            osc.frequency.linearRampToValueAtTime(1400, t0 + t + 0.6);
+            osc.frequency.linearRampToValueAtTime(700, t0 + t + 1.2);
+        }
+        osc.start(t0); osc.stop(t0 + seconds);
+        sirenOsc = osc;
+    } catch (e) {}
+}
+
+let toastTimer = null;
+function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.innerHTML = msg + "<small>Click to stop the siren</small>";
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 10000);
+}
+
+/* ---------- CLOCK ---------- */
+function tickClock() {
+    const d = new Date();
+    let h = d.getHours(); const ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12;
+    document.getElementById("time").innerHTML = pad(h) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds()) + "<small>" + ap + "</small>";
+    document.getElementById("fulldate").textContent = days[d.getDay()] + ", " + d.getDate() + " " + months[d.getMonth()] + " " + d.getFullYear();
+    const hr = d.getHours();
+    document.getElementById("greeting").textContent = hr < 12 ? "☀️ Good morning" : hr < 18 ? "🌤️ Good afternoon" : "🌙 Good evening";
+}
+
+function buildWeek() {
+    const today = new Date(), box = document.getElementById("week");
+    const start = new Date(today); start.setDate(today.getDate() - today.getDay());
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(start); d.setDate(start.getDate() + i);
+        const el = document.createElement("div");
+        el.className = "day" + (d.toDateString() === today.toDateString() ? " today" : "");
+        el.innerHTML = days[d.getDay()].slice(0, 3) + "<span>" + d.getDate() + "</span>";
+        box.appendChild(el);
+    }
+}
+
+/* ---------- TIMERS ---------- */
+function tickTimers() {
+    const nowSec = Date.now() / 1000 + serverOffset;
+
+    const banner = document.getElementById("now");
+    let total = baseElapsed;
+    if (banner.dataset.started) {
+        const segment = nowSec - parseFloat(banner.dataset.started);
+        total += segment;
+        document.getElementById("nowTime").textContent = fmt(parseFloat(banner.dataset.elapsed) + segment);
+    }
+    document.getElementById("totalTime").textContent = fmt(total);
+
+    document.querySelectorAll("li[data-elapsed]").forEach(li => {
+        let e = parseFloat(li.dataset.elapsed);
+        const running = !!li.dataset.started;
+        if (running) e += nowSec - parseFloat(li.dataset.started);
+        li.querySelector(".stopwatch").textContent = fmt(e);
+
+        const target = parseFloat(li.dataset.target);
+        if (target > 0) {
+            const left = target - e;
+            const text = li.querySelector(".cd-text"), fill = li.querySelector(".cd-fill");
+            const key = "alerted-" + li.dataset.id + "-" + target;
+            if (left > 0) {
+                text.textContent = "⏳ " + fmt(left) + " left";
+                fill.style.width = (left / target * 100) + "%";
+                li.classList.remove("over", "timeup");
+                try { localStorage.removeItem(key); } catch (e2) {}
+            } else {
+                text.textContent = "⏰ Time's up! +" + fmt(-left) + " over";
+                fill.style.width = "100%";
+                li.classList.add("over");
+                if (running) {
+                    let seen = false;
+                    try { seen = localStorage.getItem(key); } catch (e2) {}
+                    if (!seen) {
+                        try { localStorage.setItem(key, "1"); } catch (e2) {}
+                        li.classList.add("timeup");
+                        startSiren(8);
+                        showToast("⏰ Time's up for: " + li.dataset.title);
+                    }
+                }
+            }
+        }
+    });
+}
+
+themeLabel(); buildWeek(); tickClock(); tickTimers();
+setInterval(() => { tickClock(); tickTimers(); }, 1000);
+
+try {
+    if (sessionStorage.getItem("confetti")) { sessionStorage.removeItem("confetti"); confetti(); }
+} catch (e) {}
+</script>
+</body>
+</html>

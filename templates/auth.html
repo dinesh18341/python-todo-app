@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% if mode == 'login' %}Log in{% else %}Create account{% endif %} · My To-Do List</title>
+<script>
+try { var th = localStorage.getItem("theme"); if (th) document.documentElement.setAttribute("data-theme", th); } catch (e) {}
+</script>
+<style>
+:root { color-scheme: dark; --bg:#0b1220; --card:#111b2e; --card2:#17233a; --line:#25324b; --text:#e5e9f0; --muted:#8b9bb4; --accent:#2563eb; --input:#0b1220; }
+:root[data-theme="light"] { color-scheme: light; --bg:#eef2f7; --card:#ffffff; --card2:#f1f5f9; --line:#dbe3ee; --text:#0f172a; --muted:#64748b; --input:#ffffff; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Segoe UI", system-ui, Arial, sans-serif; min-height: 100vh; background: var(--bg); color: var(--text);
+    display: flex; align-items: center; justify-content: center; padding: 20px; }
+.box { width: 100%; max-width: 400px; background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 32px;
+    box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+.logo { font-size: 38px; text-align: center; }
+h1 { font-size: 22px; text-align: center; margin: 8px 0 4px; }
+.sub { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 22px; }
+label { display: block; font-size: 12px; color: var(--muted); margin: 14px 0 5px; }
+input { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--input);
+    color: var(--text); font-size: 15px; outline: none; font-family: inherit; }
+input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.25); }
+button { width: 100%; margin-top: 22px; padding: 13px; border: none; border-radius: 10px; background: var(--accent);
+    color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
+button:hover { background: #1d4ed8; }
+.error { background: rgba(220,38,38,.15); border: 1px solid #dc2626; color: #ef4444; padding: 10px 12px; border-radius: 10px; font-size: 13px; margin-bottom: 4px; }
+.switch { text-align: center; margin-top: 20px; font-size: 14px; color: var(--muted); }
+.switch a { color: #3b82f6; text-decoration: none; font-weight: 600; }
+</style>
+</head>
+<body>
+<form class="box" method="POST">
+    <div class="logo">📝</div>
+    <h1>{% if mode == 'login' %}Welcome back{% else %}Create your account{% endif %}</h1>
+    <p class="sub">{% if mode == 'login' %}Log in to see your tasks{% else %}Your tasks stay private to you{% endif %}</p>
+
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+    <label for="username">Username</label>
+    <input id="username" type="text" name="username" required autofocus autocomplete="username" maxlength="20">
+
+    <label for="password">Password</label>
+    <input id="password" type="password" name="password" required
+           autocomplete="{% if mode == 'login' %}current-password{% else %}new-password{% endif %}">
+
+    {% if mode == 'register' %}
+    <label for="confirm">Confirm password</label>
+    <input id="confirm" type="password" name="confirm" required autocomplete="new-password">
+    {% endif %}
+
+    <button type="submit">{% if mode == 'login' %}Log in{% else %}Sign up{% endif %}</button>
+
+    <p class="switch">
+        {% if mode == 'login' %}New here? <a href="/register">Create an account</a>
+        {% else %}Already have an account? <a href="/login">Log in</a>{% endif %}
+    </p>
+</form>
+</body>
+</html>

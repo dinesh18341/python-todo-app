@@ -1,0 +1,6 @@
+tasks.json
+log.json
+settings.json
+todo.db
+__pycache__/
+*.tmp
