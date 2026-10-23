@@ -1,4 +1,4 @@
-# python-todo-app# 📝 Python To-Do App
+# 📝 Python To-Do App
 
 A full-stack productivity app built with **Flask**, **SQLite** and **vanilla JavaScript**. Each user gets a private account and task list.
 
